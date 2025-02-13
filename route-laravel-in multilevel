@@ -1,0 +1,50 @@
+<?php
+
+use Illuminate\Support\Facades\Route;
+
+Route::namespace('Employee')->prefix('employee')->name('employee.')->group(function(){
+  Route::namespace('Auth')->group(function(){
+    Route::get('login','AuthenticatedSessionController@create')->name('login')->middleware('guest:employee');
+  });
+
+  Route::middleware('employee')->group(function(){
+     Route::any('logout','Auth\AuthenticatedSessionController@destroy')->name('logout');
+      Route::get('/','HomeController@create')->name('index');
+      Route::get('dashboard', 'HomeController@index')->name('dashboard');
+  });
+  
+});
+
+/// Client
+Route::namespace('Client')->prefix('client')->name('client.')->group(function(){
+    Route::namespace('Auth')->group(function(){
+        Route::get('login','AuthenticatedSessionController@create')->name('login')->middleware('guest:client');
+    });
+
+    Route::middleware('client')->group(function(){
+        Route::any('logout','Auth\AuthenticatedSessionController@destroy')->name('logout');
+        Route::get('/', 'HomeController@index');
+        Route::get('/dashboard', 'HomeController@index')->name('dashboard');
+    });
+});
+
+/// Admin
+Route::namespace('Admin')->prefix('admin')->name('admin.')->group(function(){
+
+  Route::middleware('admin')->group(function(){
+        Route::any('logout','Auth\AuthenticatedSessionController@destroy')->name('logout');
+        Route::get('/','HomeController@index')->name('index');
+  });
+});
+
+Route::get('/clear', function() {
+
+    Artisan::call('cache:clear');
+    Artisan::call('config:clear');
+    Artisan::call('config:cache');
+    Artisan::call('view:clear');
+    Artisan::call('route:clear');
+
+    return "Cleared!";
+
+});
