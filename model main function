@@ -1,0 +1,266 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class Category extends Model
+{
+
+    use HasFactory;
+
+    public function child()
+    {
+        return $this->hasMany(Category::class, 'parent', 'id');
+    }
+
+    public function parent()
+    {
+        return $this->hasOne(Category::class, 'id', 'parent');
+    }
+
+    // To get all descendants recursively (Level 3)
+    public function descendants()
+    {
+        return $this->children()->with('descendants');
+    }
+
+    public function categorybrand()
+    {
+        return $this->hasMany(CategoryBrand::class);
+    }
+
+    public function products()
+    {
+        return $this->hasMany(Product::class, 'category_id', 'id');
+    }
+
+    public function productswithStatus()
+    {
+        return $this->hasMany(Product::class, 'category_id', 'id')->where('status', 1);
+    }
+
+    public function productslimit()
+    {
+        return $this->hasMany(Product::class, 'category_id', 'id')->orderby('id', 'DESC')->limit(10);
+    }
+
+    public function catattribute()
+    {
+        return $this->hasMany(CategoryAttribute::class);
+    }
+
+    public function brandattribute()
+    {
+        return $this->hasMany(CategroyBrandAtteribute::class, 'category_id', 'id');
+    }
+
+    public function scopeGetTree($query)
+    {
+        return $query->whereHas('parent',function($qry){
+            return $qry->where('status', '1')
+            ->whereHas('parent', function ($qry) {
+                return $qry->where('status', '1')
+                ->orwhereHas('parent', function ($qry) {
+                    return $qry->where('status', '1');
+                });
+            })->orDoesntHave('parent', 'or');
+        })->where('status', '1');
+    }
+}
+
+
+
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use RecentlyViewed\Models\Contracts\Viewable;
+use Illuminate\Database\Eloquent\Model;
+use RecentlyViewed\Models\Traits\CanBeViewed;
+
+class Product extends Model
+{
+    use HasFactory, CanBeViewed;
+
+    protected $fillable = ['title'];
+
+    public function category()
+    {
+        return $this->hasOne(Category::class, 'id', 'category_id');
+    }
+
+    public function brand()
+    {
+        return $this->hasOne(Brand::class, 'id', 'brand_id');
+    }
+    public function sizeproduct()
+    {
+        return $this->hasMany(ProductSize::class, 'id', 'product_id');
+    }
+
+    public function images()
+    {
+        return $this->hasMany(ProductImage::class);
+    }
+    public function companies()
+    {
+        return $this->hasOne(Company::class, 'id', 'company_id');
+    }
+    public function attribute()
+    {
+        return $this->hasMany(ProductAattribute::class);
+    }
+    public function size()
+    {
+        return $this->hasMany(ProductSize::class);
+    }
+    public function defaultprice()
+    {
+        return $this->hasOne(ProductSize::class)->orderBy('selling_price', 'ASC');
+    }
+    public function rating()
+    {
+        return $this->hasMany(ProductRating::class)->where('status', 1)->orderby('rating', 'DESC');
+    }
+    public function views()
+    {
+        return $this->hasMany(Viewproduct::class)->where('type', 1);
+    }
+
+    public function scopeSearch($qry,$type=null)
+    {
+        $filterData='';
+
+        // $filterData = $qry->join('product_sizes as size', 'products.id', 'size.product_id');
+        $filterData = $qry;
+        // ->join('brands', 'products.brand_id', 'brands.id');
+        // $filterData->where('brands.status', 1);
+
+        if (!empty($_GET['brand'])) {
+            $filterData = $filterData->whereIn('products.brand_id', $_GET['brand']);
+        }
+
+        if (!empty($_GET['brandmap'])) {
+            $filterData = $filterData->whereIn('products.brand_id', $_GET['brandmap']);
+        }
+
+        if (!empty($_GET['category'])) {
+            $filterData = $filterData->whereIn('products.category_id', $_GET['category']);
+        }
+
+        if (!empty(request('attribute'))) {
+            $filterData = $filterData->join('product_aattributes as attributes', 'products.id', 'attributes.product_id');
+            $filterData = $filterData->whereIn('attributes.attribute_id', request('attribute'));
+        }
+        
+        if (!empty(request('sizes'))) {
+            // $filterData = $filterData->whereIn('size.attribute_id', $_GET['sizes']);
+        }
+
+        if (!empty(request('productname'))) {
+            $filterData = $filterData->where('products.title', 'LIKE', '%' . request('productname') . '%');
+            $filterData = $filterData->orwhere('products.description', 'LIKE', '%' . request('productname') . '%');
+            $filterData = $filterData->orwhere('products.short_description', 'LIKE', '%' . request('productname') . '%');
+            $filterData = $filterData->orwhere('products.specifications', 'LIKE', '%' . request('productname') . '%');
+        }
+        if (!empty(request('colors'))) {
+            $filterData = $filterData->join('product_colors as color', 'products.id', 'color.product_id');
+            $filterData = $filterData->whereIn('color.attribute_id', request('colors'));
+        }
+        if (!empty(request('availability'))) {
+            // $filterData = $filterData->where('size.selling_price', '>', 0);
+        }
+
+        if (!empty(request('max-value'))) {
+            // $filterData = $filterData->whereBetween('size.selling_price', [request('min-value'), request('max-value')]);
+        }
+
+        // if($type!='withoutdiscount'){
+        //     if (!empty($_GET['discount'])) {
+        //         if ($_GET['discount'] > 70) {
+        //             $filterData = $filterData->where('size.discount', '>', $_GET['discount']);
+        //         } else {
+        //             $Arr = explode('-', $_GET['discount']);
+        //             $filterData = $filterData->whereBetween('size.discount', [$Arr[0], $Arr[1]]);
+        //         }
+        //     }
+        // }
+
+        if (!empty($_GET['sortby'])) {
+            if ($_GET['sortby'] == 'new') {$filterData = $filterData->whereBetween('products.created_at', [date('Y-m-d', strtotime('-10 days' . date('Y-m-d'))) . " 00:00:00", date('Y-m-d') . " 23:59:59"]);}
+            if ($_GET['sortby'] == 'title-asc') {$filterData = $filterData->orderby('products.title', 'ASC');}
+            if ($_GET['sortby'] == 'title-desc') {$filterData = $filterData->orderby('products.title', 'DESC');}
+            // if ($_GET['sortby'] == 'price-asc') {$filterData = $filterData->orderby('size.selling_price', 'ASC');}
+            // if ($_GET['sortby'] == 'price-desc') {$filterData = $filterData->orderby('size.selling_price', 'DESC');}
+        } else {
+            // $filterData = $filterData->orderby('size.selling_price', 'ASC')->groupBy('products.id');
+        }
+        
+        $filterData = $filterData->groupBy('products.id');
+
+        return $filterData;
+    }
+
+}
+
+
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class Brand extends Model
+{
+    use HasFactory;
+
+    public function products(){
+        return $this->hasMany(Product::class,'brand_id','id');
+    }
+
+    public function activeproduct(){
+        return $this->hasMany(Product::class,'brand_id','id')->where('status',1);
+    }
+
+    public function filterproduct(){
+        $data = $this->hasMany(Product::class,'brand_id','id');
+        $data = $data->where('status',1);
+        if(request()->segment(1)=='category'){
+            $category = \App\Models\Category::where('alias',request()->segment(2))->first();
+            $data = $data->where('category_id',$category->id ?? 0);
+        }
+
+        if(request()->segment(1)=='best-sellers'){
+            $data = $data->where('best',1);
+        }
+
+        if(request()->segment(1)=='features-product'){
+            $data = $data->where('featured',1);
+        }
+
+        if(request('max-value')>0){
+            $data = $data->with(['size'=>function($qry){
+                return $qry->whereBetween('selling_price',[request('min-value'),request('max-value')]);
+            }]);
+        }
+
+        return $data;
+    }
+
+    public function productsall()
+    {
+        return $this->hasMany(Product::class);
+    }
+
+    public function brandattribute()
+    {
+        return $this->hasMany(CategroyBrandAtteribute::class, 'brand_id', 'id');
+    }
+
+}
+
+
