@@ -1,0 +1,819 @@
+<?php
+
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+
+if (!function_exists('lowstockqty')) {
+
+    function lowstockqty()
+    {
+        return 6;
+    }
+}
+
+if (!function_exists('currency')) {
+
+    function currency()
+    {
+
+        return ['AED', 'AED'];
+
+    }
+
+}
+
+if (!function_exists('userinfo')) {
+
+    function userinfo()
+    {
+
+        $user = Auth::user();
+
+        return $user;
+
+    }
+
+}
+
+if (!function_exists('admininfo')) {
+
+    function admininfo()
+    {
+
+        $user = Auth::guard('admin')->user();
+
+        return $user;
+
+    }
+
+}
+
+if (!function_exists('project')) {
+
+    function project()
+    {
+
+        return 'Genx';
+
+    }
+
+}
+
+if (!function_exists('getordernumber')) {
+
+    function getordernumber($id)
+    {
+
+        $NewOrderNo = '#' . str_pad($id, 8, "0", STR_PAD_LEFT);
+
+        $checkOrderNo = \App\Models\Order::where('order_no', $NewOrderNo)->count();
+
+        if ($checkOrderNo > 0) {
+
+            $id++;
+
+            $NewOrderNo = getordernumber($id);
+
+        }
+
+        return $NewOrderNo;
+
+    }
+
+}
+
+if (!function_exists('colorHalfText')) {
+    function colorHalfText($text, $firstColor = 'red', $secondColor = 'black')
+    {
+        $words = preg_split('/\s+/', trim($text));
+        $totalWords = count($words);
+
+        if ($totalWords === 1) {
+            // If there is only one word, color it entirely with the first color
+            return sprintf('<span class="%s;">%s</span>', htmlspecialchars($firstColor, ENT_QUOTES, 'UTF-8'), htmlspecialchars($text, ENT_QUOTES, 'UTF-8'));
+        }
+
+        // Calculate the midpoint for words
+        $midIndex = ceil($totalWords / 2);
+
+        // Join words to form two parts
+        $firstHalf = implode(' ', array_slice($words, 0, $midIndex));
+        $secondHalf = implode(' ', array_slice($words, $midIndex));
+
+        // Return the formatted HTML
+        return sprintf(
+            '<span class="%s">%s</span> %s',
+            htmlspecialchars($firstColor, ENT_QUOTES, 'UTF-8'),
+            htmlspecialchars($firstHalf, ENT_QUOTES, 'UTF-8'),
+            // htmlspecialchars($secondColor, ENT_QUOTES, 'UTF-8'),
+            htmlspecialchars($secondHalf, ENT_QUOTES, 'UTF-8')
+        );
+    }
+}
+
+if (!function_exists('colorHalfTextftt')) {
+    function colorHalfTextftt($text, $firstClass = 'text-black', $secondClass = 'text-red')
+    {
+        // Split the text into words
+        $words = preg_split('/\s+/', trim($text));
+        $totalWords = count($words);
+
+        // Handle the case with only one word
+        if ($totalWords === 1) {
+            return sprintf('<span class="%s">%s</span>', htmlspecialchars($firstClass, ENT_QUOTES, 'UTF-8'), htmlspecialchars($text, ENT_QUOTES, 'UTF-8'));
+        }
+
+        // Calculate the midpoint
+        $midIndex = ceil($totalWords / 2);
+
+        // Separate the first and second halves
+        $firstHalf = implode(' ', array_slice($words, 0, $midIndex));
+        $secondHalf = implode(' ', array_slice($words, $midIndex));
+
+        // Return the formatted HTML
+        return sprintf(
+            '<span class="%s">%s</span> <span class="%s">%s</span>',
+            htmlspecialchars($firstClass, ENT_QUOTES, 'UTF-8'),
+            htmlspecialchars($firstHalf, ENT_QUOTES, 'UTF-8'),
+            htmlspecialchars($secondClass, ENT_QUOTES, 'UTF-8'),
+            htmlspecialchars($secondHalf, ENT_QUOTES, 'UTF-8')
+        );
+    }
+}
+
+if (!file_exists('imagedecript')) {
+
+    function imagedecript($image)
+    {
+
+        return base64_decode($image);
+
+    }
+
+}
+
+if (!file_exists('settingdata')) {
+
+    function settingdata()
+    {
+
+        return \App\Models\Setting::find(1);
+
+    }
+
+}
+
+if (!function_exists('dateformat')) {
+
+    function dateformat($data)
+    {
+
+        return date('d M Y', strtotime($data));
+
+    }
+
+}
+
+if (!function_exists('datetimeformat')) {
+
+    function datetimeformat($data)
+    {
+
+        return date('d M Y h:i:s A', strtotime($data));
+
+    }
+
+}
+
+if (!function_exists('checkimagetype')) {
+
+    function checkimagetype($image)
+    {
+
+        $explode = explode('.', imagedecript($image));
+
+        return end($explode);
+
+    }
+
+}
+
+if (!function_exists('cartqty')) {
+
+    function cartqty()
+    {
+
+        $cartItems = \Cart::content();
+
+        $qty = 0;
+
+        foreach ($cartItems as $cartItem) {
+
+            $qty += $cartItem->quantity;
+
+        }
+
+        return $qty;
+
+    }
+
+}
+
+if (!function_exists('sepratearr')) {
+
+    function sepratearr($title)
+    {
+
+        $array = explode(' ', $title);
+
+        $array2 = array_chunk($array, ceil(count($array) / 2));
+
+        $Arr1 = !empty($array2[0]) ? implode(' ', $array2[0]) : '';
+
+        $Arr2 = !empty($array2[1]) ? implode(' ', $array2[1]) : '';
+
+        return [$Arr1, $Arr2];
+
+    }
+
+}
+
+if (!function_exists('showFile')) {
+    function showFile($path, $image)
+    {
+        $path = 'up/' . $path;
+        $Arr = explode('.', $image);
+        array_pop($Arr);
+        if (!empty($image) && file_exists(public_path($path . 'webp/' . implode('', $Arr) . '.webp'))) {
+            return asset($path . 'webp/' . implode('', $Arr) . '.webp');
+        } elseif (!empty($image) && file_exists(public_path($path . '/' . $image))) {
+            return asset($path . '/' . $image);
+        } else {
+            return asset('admin/img/no-img.webp');
+        }
+
+    }
+}
+
+if (!function_exists('showFilePoduct')) {
+    function showFilePoduct($path, $image)
+    {
+        if (!empty($image)){
+                $exten = explode('.', $image);
+                $lastValue = array_pop($exten);
+
+            if (strtoupper($lastValue) != 'WEBP' && file_exists(public_path('up/' . $path . '/webp/' . implode($exten) . '.webp'))){
+                return asset('up/' . $path . '/webp/' . implode($exten) . '.webp');
+            }
+
+            if (file_exists(public_path('up/' . $path . '/' . $image))){
+            return asset('up/' . $path . '/' . $image);
+                    
+            } elseif (file_exists(public_path('up/' . $path . '/og/' . $image))) {
+                return asset('up/' . $path . '/og/' . $image); 
+                   
+            } else{
+                return asset('frontend/img/no-img.jpg');     
+            }
+        }else{
+            return asset('frontend/img/no-img.jpg');
+                
+        }
+    }
+}
+
+if (!function_exists('removeFile')) {
+    function removeFile($path, $image)
+    {
+        $path = 'up/' . $path;
+        $Arr = explode('.', $image);
+        array_pop($Arr);
+        if (!empty($image) && file_exists(public_path($path . $image))) {
+            unlink(public_path($path . $image));
+        }
+        if (!empty($image) && file_exists(public_path($path . 'webp/' . implode('', $Arr) . '.webp'))) {
+            unlink(public_path($path . 'webp/' . implode('', $Arr) . '.webp'));
+        }
+        if (!empty($image) && file_exists(public_path($path . 'og/' . $image))) {
+            unlink(public_path($path . 'og/' . $image));
+        }
+        if (!empty($image) && file_exists(public_path($path . $image))) {
+            unlink(public_path($path . $image));
+        }
+    }
+}
+
+if (!function_exists('directFile')) {
+
+    function directFile($path, $image, $type = null)
+    {
+
+        $name = str_replace(' ', '', strtolower($image->getClientOriginalName()));
+
+        if (empty($type)) {$fileName = date("Y-m-d") . rand(1111111, 9999999) . $name;} else { $fileName = $name;}
+
+        // $fileName = date("Y-m-d").rand(1111111,9999999).$name;
+
+        $image->move(public_path($path . 'og/'), $fileName);
+
+        return [$name, base64_encode($fileName)];
+
+    }
+
+}
+
+if (!function_exists('autoheight')) {
+
+    function autoheight($path, $width, $image)
+    {
+        $path = "up/" . $path;
+        $name = $image->getClientOriginalName();
+        $extention = $image->getClientOriginalExtension();
+        if (strtoupper($extention) == 'WEBP') {
+            $fileName = $image->store($path, 'public');
+            $fileName = str_replace($path . '/', '', $fileName);
+            return $fileName;
+        } else {
+            $fileName = date("Y-m-d") . rand(1111111, 9999999);
+            converttowebp($path, $width, $image, $fileName);
+            converttojpg($path, $width, $image, $fileName . '.' . $extention);
+            originalImage($path, $image, $fileName . '.' . $extention);
+            return $fileName . '.' . $extention;
+        }
+
+    }
+}
+
+if (!function_exists('autoHeightWithOriginnal')) {
+    function autoHeightWithOriginnal($path, $width, $image)
+    {
+        $name = $image->getClientOriginalName();
+        $extention = $image->getClientOriginalExtension();
+        $fileName = date("Y-m-d") . rand(1111111, 9999999);
+        $this->converttowebp($path, $width, $image, $fileName);
+        $this->converttojpg($path, $width, $image, $fileName . '.' . $extention);
+        $this->originalImage($path, $image, $fileName . '.' . $extention);
+        return $fileName;
+    }
+}
+
+if (!function_exists('converttowebp')) {
+    function converttowebp($path, $width, $image, $fileName)
+    {
+        $imagesource = public_path($path . 'webp/' . $fileName . '.webp');
+        $imageConvert = \Image::make($image->getRealPath());
+        $imageConvert->encode('webp', 90);
+        // $imageConvert->resolution(72, 72);
+        $imageConvert->resize($width, null, function ($constraint) {
+            $constraint->aspectRatio();
+        });
+        $imageConvert->brightness(1);
+        $imageConvert->save($imagesource);
+    }
+}
+if (!function_exists('converttojpg')) {
+    function converttojpg($path, $width, $image, $fileName)
+    {
+        $imagesource = public_path($path . $fileName);
+        $imageConvert = \Image::make($image->getRealPath());
+        // $imageConvert->resolution(72,72);
+        $imageConvert->resize($width, null, function ($constraint) {
+            $constraint->aspectRatio();
+        });
+        $imageConvert->brightness(1);
+        $imageConvert->save($imagesource);
+    }
+}
+if (!function_exists('originalImage')) {
+    function originalImage($path, $image, $fileName)
+    {
+        $imagesource = public_path($path . 'og/' . $fileName);
+        $imageConvert = \Image::make($image->getRealPath());
+        // $imageConvert->resolution(72,72);
+        $imageConvert->brightness(1);
+        $imageConvert->save($imagesource);
+    }
+
+}
+
+if (!function_exists('cmsHeading')) {
+    function cmsHeading($cmsId)
+    {
+        switch ($cmsId) {
+            case '1':
+                return 'About Us (Home Page)';
+                break;
+            case '2':
+                return 'Our Services (Home Page)';
+                break;
+            case '3':
+                return 'Quality Policy (Home Page)';
+                break;
+            case '4':
+                return 'Mission & Vision (Home Page)';
+                break;
+            case '5':
+                return 'Accreditation (Home Page)';
+                break;
+            case '6':
+                return 'Our FAQs (Home Page)';
+                break;
+            case '7':
+                return 'Our Blog (Home Page)';
+                break;
+            case '8':
+                return 'Testimonials (Home Page)';
+                break;
+            case '9':
+                return 'Contact  (Home Page)';
+                break;
+            case '10':
+                return 'About Us';
+                break;
+            case '11':
+                return 'Mission & Vision';
+                break;
+            case '12':
+                return 'Why Choose Us (Page Content)';
+                break;
+            case '13':
+                return 'What We Do';
+                break;
+            case '14':
+                return 'Blog (Page Content)';
+                break;
+            case '15':
+                return 'Career (Page Content)';
+                break;
+            case '16':
+                return 'Privacy Policy';
+                break;
+            case '17':
+                return 'Terms & Conditions';
+                break;
+            case '18':
+                return 'FAQs';
+                break;
+            case '19':
+                return 'Accreditation';
+                break;
+            case '20':
+                return 'Categorie (Page Content)';
+                break;
+            case '21':
+                return 'Quality Policy (Page Content)';
+                break;
+            default:
+                return 'CMS Edit';
+                break;
+        }
+    }
+
+}
+
+if (!function_exists('alias')) {
+
+    function alias($table, $field, $title)
+    {
+
+        $table = $table;
+
+        $field = $field;
+
+        $slug = $title;
+
+        $slug = Str::slug($title, "-");
+
+        $key = null;
+
+        $value = null;
+
+        $i = 0;
+
+        $params = array();
+
+        $params[$field] = $slug;
+
+        if ($key) {
+            $params["$key !="] = $value;
+        }
+
+        while (DB::table($table)->where($params)->get()->count()) {
+
+            if (!preg_match('/-{1}[0-9]+$/', $slug)) {
+                $slug .= '-' . ++$i;
+            } else {
+                $slug = preg_replace('/[0-9]+$/', ++$i, $slug);
+            }
+
+            $params[$field] = $slug;
+
+        }
+
+        return $alias = $slug;
+
+    }
+
+}
+
+if (!function_exists('int_to_words')) {
+
+    function int_to_words($number)
+    {
+
+        $no = (int) floor($number);
+
+        $point = (int) round(($number - $no) * 100);
+
+        $hundred = null;
+
+        $digits_1 = strlen($no);
+
+        $i = 0;
+
+        $str = array();
+
+        $words = array('0' => '', '1' => 'one', '2' => 'two',
+
+            '3' => 'three', '4' => 'four', '5' => 'five', '6' => 'six',
+
+            '7' => 'seven', '8' => 'eight', '9' => 'nine',
+
+            '10' => 'ten', '11' => 'eleven', '12' => 'twelve',
+
+            '13' => 'thirteen', '14' => 'fourteen',
+
+            '15' => 'fifteen', '16' => 'sixteen', '17' => 'seventeen',
+
+            '18' => 'eighteen', '19' => 'nineteen', '20' => 'twenty',
+
+            '30' => 'thirty', '40' => 'forty', '50' => 'fifty',
+
+            '60' => 'sixty', '70' => 'seventy',
+
+            '80' => 'eighty', '90' => 'ninety');
+
+        $digits = array('', 'hundred', 'thousand', 'lakh', 'crore');
+
+        while ($i < $digits_1) {
+
+            $divider = ($i == 2) ? 10 : 100;
+
+            $number = floor($no % $divider);
+
+            $no = floor($no / $divider);
+
+            $i += ($divider == 10) ? 1 : 2;
+
+            if ($number) {
+
+                $plural = (($counter = count($str)) && $number > 9) ? 's' : null;
+
+                $hundred = ($counter == 1 && $str[0]) ? '  ' : null;
+
+                $str[] = ($number < 21) ? $words[$number] .
+
+                " " . $digits[$counter] . $plural . " " . $hundred
+
+                :
+
+                $words[floor($number / 10) * 10]
+
+                    . " " . $words[$number % 10] . " "
+
+                    . $digits[$counter] . $plural . " " . $hundred;
+
+            } else {
+                $str[] = null;
+            }
+
+        }
+
+        $str = array_reverse($str);
+
+        $result = implode('', $str);
+
+        if ($point > 20) {
+
+            $points = ($point) ?
+
+            "" . $words[floor($point / 10) * 10] . " " .
+
+            $words[$point = $point % 10] : '';
+
+        } else {
+
+            $points = $words[$point];
+
+        }
+
+        if ($points != '') {
+
+            return $result . "and  " . $points . " Only";
+
+        } else {
+
+            return $result . "Only";
+
+        }
+
+    }
+
+}
+
+if (!function_exists('exportHeader')) {
+
+    function exportHeader($fileName)
+    {
+
+        $Arr = array(
+
+            "Content-type" => "text/csv",
+
+            "Content-Disposition" => "attachment; filename=$fileName",
+
+            "Pragma" => "no-cache",
+
+            "Cache-Control" => "must-revalidate, post-check=0, pre-check=0",
+
+            "Expires" => "0",
+
+        );
+
+        return $Arr;
+
+    }
+
+}
+
+if (!function_exists('readNotification')) {
+
+    function readNotification($id)
+    {
+
+        $data = \App\Models\Notification::find($id);
+
+        $data->status = 1;
+
+        $data->save();
+
+    }
+
+}
+
+// VALIDATION
+function repeatedValidation($value, $fail, $maxLength = null)
+{
+    if (empty(strip_tags($value)) && str_contains($value, '<img')) {
+        return $fail('only image are not allowed.');
+    } elseif (empty(strip_tags($value))) {
+        return $fail('The empty field are not accepted.');
+    } elseif (is_numeric(strip_tags($value))) {
+        return $fail('The numeric value are not accepted.');
+    } elseif (preg_match("/\b(\w+)\s+\\1\b/i", strip_tags($value)) > 0) {
+        return $fail('You can`t add repeated word in this field.');
+    } elseif (!empty($maxLength)) {
+        if (strlen(strip_tags($value)) > $maxLength) {
+            return $fail('You can`t add more than ' . $maxLength . ' characters.');
+        }
+    } elseif (preg_match("/^[^a-zA-Z0-9]+$/", strip_tags($value)) > 0) {
+        return $fail('You can`t add wrong format in this field.');
+    } elseif (!preg_match('/[a-zA-Z]/', strip_tags($value))) {
+        return $fail('Please add atleast one character.');
+    }
+}
+
+function repeatedValidation2($value, $fail, $maxLength = null)
+{
+    if (is_numeric(strip_tags($value))) {
+        return $fail('The numeric value are not accepted.');
+    } elseif (preg_match("/\b(\w+)\s+\\1\b/i", strip_tags($value)) > 0) {
+        return $fail('You can`t add repeated word in this field.');
+    } elseif (!empty($maxLength)) {
+        if (strlen(strip_tags($value)) > $maxLength) {
+            return $fail('You can`t add more than ' . $maxLength . ' characters.');
+        }
+    } elseif (preg_match("/^[^a-zA-Z0-9]+$/", strip_tags($value)) > 0) {
+        return $fail('You can`t add wrong format in this field.');
+    }
+}
+
+function specialCharValidation($value, $fail, $maxLength = null)
+{
+    if (empty(strip_tags($value))) {
+        return $fail('The empty field are not accepted.');
+    } elseif (preg_match("/\b(\w+)\s+\\1\b/i", strip_tags($value)) > 0) {
+        return $fail('You can`t add repeated word in this field.');
+    } elseif (preg_match("/^[^a-zA-Z0-9]+$/", strip_tags($value)) > 0) {
+        return $fail('You can`t add wrong format in this field.');
+    }
+}
+
+function emailValidation($value, $fail)
+{
+    $email = trim($value);
+    $email = str_replace(" ", "", $email);
+    if (filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
+        return $fail('Invalid email address.');
+    }
+
+    if (substr_count($email, '@') > 1) //more than one '@'?
+    {
+        return $fail('Invalid email address.');
+    }
+
+    if (preg_match("#[\;\#\n\r\*\'\"<>&\%\!\(\)\{\}\[\]\?\\/\s]#", $email)) {
+        return $fail('Invalid email address.');
+    } else if (preg_match("/^.+\@(\[?)[a-zA-Z0-9\-\.]+\.([a-zA-Z]{2,4}|[0-9]{1,4})(\]?)$/", $email)) {
+        return true;
+    } else {
+        return $fail('Invalid email address.');
+    }
+}
+
+// MEta
+if (!function_exists('metaInfo')) {
+    function metaInfo($id)
+    {
+        return \App\Models\Meta::findOrFail($id);
+    }
+}
+
+if (!function_exists('cmsHeading')) {
+    function cmsHeading($cmsId)
+    {
+        switch ($cmsId) {
+            case '0':
+                return 'Home (Home Page)';
+                break;
+            case '1':
+                return 'About Us (Home Page)';
+                break;
+            case '2':
+                return 'Our Services (Home Page)';
+                break;
+            case '3':
+                return 'Quality Policy (Home Page)';
+                break;
+            case '4':
+                return 'Mission & Vision (Home Page)';
+                break;
+            case '5':
+                return 'Accreditation (Home Page)';
+                break;
+            case '6':
+                return 'Our FAQs (Home Page)';
+                break;
+            case '7':
+                return 'Our Blog (Home Page)';
+                break;
+            case '8':
+                return 'Testimonials (Home Page)';
+                break;
+            case '9':
+                return 'Contact  (Home Page)';
+                break;
+            case '10':
+                return 'About Us';
+                break;
+            case '11':
+                return 'Mission & Vision';
+                break;
+            case '12':
+                return 'Why Choose Us (Page Content)';
+                break;
+            case '13':
+                return 'What We Do';
+                break;
+            case '14':
+                return 'Blog (Page Content)';
+                break;
+            case '15':
+                return 'Career (Page Content)';
+                break;
+            case '16':
+                return 'Privacy Policy';
+                break;
+            case '17':
+                return 'Terms & Conditions';
+                break;
+            case '18':
+                return 'FAQs';
+                break;
+            case '19':
+                return 'Accreditation';
+                break;
+            case '20':
+                return 'Categorie (Page Content)';
+                break;
+            case '21':
+                return 'Quality Policy (Page Content)';
+                break;
+            default:
+                return 'CMS Edit';
+                break;
+        }
+    }
+
+}
