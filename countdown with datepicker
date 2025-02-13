@@ -1,3 +1,12 @@
+ <div class="punch-info">
+                            <div class="punch-hours">
+                                <span class="countdown" id="demo">
+                                    0:0 hrs
+                                </span>
+                            </div>
+                        </div>
+
+
 <script>
     // $(".datetimepicker").datepicker({ minDate: new Date() });
     var countDownDate = new Date(@json(date('M d, Y 19:00:00',strtotime($today->created_at)))).getTime();
