@@ -1,0 +1,158 @@
+resource folder -> view folder file ->
+
+<x-meta :options="[
+        'img' => $metaImg ?? '',
+        'title' => \Content::metaInfo(1)->title,
+        'keywords' => \Content::metaInfo(1)->keywords,
+        'description' => \Content::metaInfo(1)->description,
+        'FaqsScr' => $FaqsScr ?? '',
+        'breadcrumb' => [
+            ]
+    ]" />
+
+
+
+resource folder -> component folder file ->
+
+<title>{!! $title !!}</title>
+<meta name="description" content="{!! $description !!}">
+<meta name="keywords" content="{!! $keywords !!}">
+
+<link rel="canonical" href="{{ url()->current() }}">
+<meta id="subject" name="subject" content="{{ $title }}">
+<meta id="document-type" name="document-type" content="public">
+<meta id="Copyright" name="Copyright" content="Copyright @ACETestLabs">
+<meta id="distribution" name="distribution" content="Global">
+<meta id="robots" name="robots" content="INDEX,FOLLOW">
+<meta id="audience" name="audience" content="All, Business">
+<meta id="country" name="country" content="India">
+<meta id="city" name="city" content="Sonipat">
+<meta id="email" name="reply-to" content="info@acetestgroup.com">
+<meta name="allow-search" content="yes">
+<meta name="revisit-after" content="daily">
+<meta name="Rating" content="General">
+<meta name="coverage" content="Worldwide">
+<meta name="expires" content="never">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@AceTestLabs">
+<meta name="twitter:creator" content="@AceTestLabs">
+<meta name="twitter:title" content="{{ $title }}">
+<meta name="twitter:description" content="{!! $description !!}">
+<meta name="twitter:image" content="{{ !empty($options['img']) ? $options['img'] : asset('frontend/img/logo.svg') }}">
+<meta property="twitter:image:alt" content="ACE Test Labs- Independent Testing Laboratory">
+
+
+<meta property="og:url" content="{{ url()->current() }}">
+<meta property="og:type" content="{{ $options['metatype'] ?? 'website' }}">
+<meta property="og:title" content="{!! $title !!}">
+<meta property="og:description" content="{!! $description !!}">
+<meta property="og:image" content="{{ !empty($options['img']) ? $options['img'] : asset('frontend/img/logo.svg') }}">
+<meta property="og:image:alt" content="{!! $title !!}">
+@php
+$imgPath = $options['img'];
+$extension = pathinfo($imgPath, PATHINFO_EXTENSION);
+@endphp
+<meta property="og:image:type" content="image/{{$extension ?? 'svg'}}">
+<meta property="og:site_name" content="ACE Test Labs- Independent Testing Laboratory">
+
+
+    <!-- Organization Script All Pages-->
+
+    <script type="application/ld+json">
+        {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "name": "{!! $title !!}",
+        "alternateName": "{!! $title !!}",
+        "url": "https://www.acetestgroup.com/",
+        "@id": "{{ url()->current() }}",
+        "logo": "{{ asset('frontend/img/logo.svg') }}",
+        "Image": "{{ !empty($options['img']) ? $options['img'] : asset('frontend/img/logo.svg') }}",
+        "description": "{!! $description !!}",
+        "openingHoursSpecification": [
+            {
+            "@type": "OpeningHoursSpecification",
+            "dayOfWeek": [
+            "Monday",
+            "Tuesday",
+            "Wednesday",
+            "Thursday",
+            "Friday",
+            "Saturday"
+            ],
+            "opens": "09:30",
+            "closes": "18:00"
+        }],
+        "priceRange": "$$$",
+
+        "contactPoint": {
+            "@type": "ContactPoint",
+            "telephone": "+91-8816921177",
+            "email": "info@acetestgroup.com",
+            "address": {
+                "@type": "PostalAddress",
+                "streetAddress": "Plot no.68",
+                "addressLocality": "HSIIDC Industrial Estate",
+                "addressRegion": "Rai",
+                "addressCountry": "Haryana",
+                "postalCode": "131029"
+            },
+            "contactType": "customer service",
+            "areaServed": "IN",
+            "availableLanguage": ["en","India"]
+        },
+        "sameAs": [
+            "https://www.facebook.com/acetestlabs",
+            "https://www.instagram.com/acetestlabs/",
+            "https://in.pinterest.com/AceTestLabs/",
+            "https://x.com/AceTestLabs",
+            "https://www.threads.net/@acetestlabs",
+            "https://www.youtube.com/@ace-test-labs"
+        ]
+        }
+    </script>
+
+    @php
+        $position=1;
+        $breadcrumb ='{
+            "@type": "ListItem",
+            "position": '.$position.',
+            "name": "Home",
+            "item": "'.route('home').'"
+            }';
+
+        if(count($options['breadcrumb']) > 0){
+            foreach ($options['breadcrumb'] as $key => $bread) {
+                if(!empty($bread)){
+                    $position++;
+                    $breadcrumb .= ',{
+                    "@type": "ListItem",
+                    "position": '.$position.',
+                    "name": "'.$key.'",
+                    "item": "'.$bread.'"
+                    }';
+                }
+            }
+        }
+    @endphp
+
+    <script type="application/ld+json">
+        {
+            "@context": "https://schema.org/",
+            "@type": "BreadcrumbList",
+            "itemListElement": [{!! $breadcrumb !!}]
+        }
+    </script>
+
+    {{-- FAQ- Page Schema --}}
+
+    @if (!empty($options['FaqsScr']))
+        <script type="application/ld+json">
+            {
+            "@context": "https://schema.org",
+            "@type": "FAQPage",
+                "mainEntity": [{!! $options['FaqsScr'] !!}]
+            }
+        </script>
+    @endif
