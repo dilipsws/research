@@ -1,0 +1,243 @@
+public function Apply_Job(Request $r)
+    {
+        // dd($r->phone);
+        $this->validate($r, [
+            'phone' => 'required|regex:/^[0-9]{10,12}$/',
+            'name' => 'required|regex:/^[a-zA-Z\s]+$/',
+            'email' => 'required|email:rfc|regex:/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/',
+            'message' => 'required|max:500',
+            'resume' => [
+                'required', 
+                'max:5000',
+                function ($attribute, $value, $fail) {
+                    if (!in_array($value->getClientOriginalExtension(), ['pdf', 'doc', 'docx', 'txt'])) {
+                        $fail("The $attribute must be a file of type: pdf, doc, docx, or txt.");
+                    }
+                }
+            ],
+            // 'experience'=>'required'
+        ], [
+            'phone.required' => 'The phone no. field is required.',
+            'phone.regex' => 'The phone no. must be between 10 and 12 digits.',
+        ]);
+}
+
+public function requestcallback(Request $r)
+    {
+        $r->validate([
+            'name' => ['required', 'string', 'max:100', 'regex:/^[a-zA-Z\s]+$/'],
+            'email' => ['required', 'email', 'max:255'],
+            'contactnoo' => ['required', 'regex:/^[0-9]{10,12}$/'],
+        ], [
+            'name.required' => 'The name field is required.',
+            'name.max' => 'The name may not be greater than 100 characters.',
+            'email.required' => 'The email field is required.',
+            'email.email' => 'The email must be a valid email address.',
+            'contactnoo.required' => 'The contact number field is required.',
+            'contactnoo.regex' => 'The contact number must be between 10 and 12 digits.',
+        ]);
+}
+
+
+
+public function Save(Request $r)
+    {
+        $validated = $r->validate([
+            'product_name' => ['required', 'max:200','unique:products,title', function ($attributes, $value, $faild) {
+                repeatedValidation($value, $faild);
+            }],
+            'model_number'=>['required','unique:products,model','max:50'],
+            'category' => ['required', 'numeric'],
+            'image' => ['required','mimes:png,jpg,jpeg,webp','max:5000', function ($attribute, $value, $fail) {
+                if(!in_array($value->getClientOriginalExtension(), ['jpeg', 'jpg', 'png', 'webp'])) {
+                    $fail("The $attribute must be a file of type: jpeg, jpg, png, or webp.");
+                }
+            }],
+            'brand' => ['required', 'numeric'],
+            'gst' => ['nullable', 'numeric','between:0,95'],
+            'short_description' => ['nullable', 'max:300', function ($attributes, $value, $faild) {
+                repeatedValidation($value, $faild);
+            }],
+            'decription' => ['nullable', function ($attributes, $value, $faild) {
+                repeatedValidation2($value, $faild);
+            }],
+            'specifications' => ['nullable', function ($attributes, $value, $faild) {
+                repeatedValidation2($value, $faild);
+            }],
+            'meta_title' => ['nullable', 'max:200', function ($attributes, $value, $faild) {
+                repeatedValidation($value, $faild);
+            }],
+            'meta_keywords' => ['nullable', 'max:500', function ($attributes, $value, $faild) {
+                repeatedValidation($value, $faild);
+            }],
+            'meta_description' => ['nullable', 'max:500', function ($attributes, $value, $faild) {
+                repeatedValidation($value, $faild);
+            }],
+            'moreimg.*' => ['required', 'mimes:png,jpg,jpeg,webp', 'max:5000'],
+            // 'size.*' => ['required'],
+            // 'unites.*' => ['required','numeric'],
+            // 'sku.*' => 'required|regex:/^([a-zA-Z0-9])+$/u',
+            // 'stock.*' => 'required|digits_between:0,100000',
+            // 'mrp.*' => 'required|between:1,500000',
+            // 'selling_price.*' => 'required|lt:mrp.*',
+        ], [], [
+            'gst' => 'vat',
+            'specifications' => 'specification',
+            'moreimg.*'=>'more images',
+            'decription' => 'description',
+            // 'size.*' => 'size',
+            // 'unites.*' => 'unites',
+            // 'sku.*' => 'sku',
+            // 'stock.*' => 'stock',
+            // 'mrp.*' => 'mrp',
+            // 'selling_price.*' => 'selling price',
+        ]);
+
+        // dd($r->all());
+
+        if (!empty($r->image)) {
+            $ImageName = autoheight('pr/', 400, $r->image);
+        }
+        $data = new Product();
+        $data->model = $r->model_number;
+        $data->title = $r->product_name;
+        $data->alias = alias('products', 'alias', $r->product_name);
+        $data->description = $r->decription ?? null;
+        $data->specifications = $r->specifications ?? null;
+        $data->brand_id = $r->brand ?? null;
+        $data->gst = $r->gst ?? 0;
+        $data->short_description = $r->short_description ?? null;
+        $data->category_id = $r->category ?? null;
+        $data->availability = $r->availability ?? 1;
+        $data->image = $ImageName ?? null;
+        $data->meta_title = $r->meta_title ?? $r->product_name;
+        $data->meta_keywords = $r->meta_keywords ?? $r->product_name;
+        $data->meta_description = $r->meta_description ?? $r->product_name;
+        $data->save();
+
+        self::AddProductImages($r->all(), $data->id);
+        self::AddProductAttribute($r->all(), $data->id);
+        return response()->json([
+            'status' => 200,
+            'message' => Message::SAVE
+        ]);
+        // return back()->with('success_msg', Message::SAVE);
+    }
+    
+    public function Update(Product $product, Request $r)
+    {
+        // dd($r->all());
+        $validated = $r->validate([
+            'product_name' => ['required', 'max:200','unique:products,title,'.$product->id, function ($attributes, $value, $faild) {
+                repeatedValidation($value, $faild);
+            }],
+            // 'model_number'=>['required','unique:products,model,'.$product->id,'max:50'],
+            'model_number' => [
+                'required',
+                Rule::unique('products', 'model')->ignore($product->id),
+                'max:50'
+            ],
+            'alias' => ['required', 'max:200','regex:/^([-a-zA-Z0-9])+$/u','unique:products,alias,'.$product->id],
+            'category' => ['required', 'numeric'],
+            'image' => ['nullable','mimes:png,jpg,jpeg,webp','max:5000', function ($attribute, $value, $fail) {
+                if(!in_array($value->getClientOriginalExtension(), ['jpeg', 'jpg', 'png', 'webp'])) {
+                    $fail("The $attribute must be a file of type: jpeg, jpg, png, or webp.");
+                }
+            }],
+            'brand' => ['required', 'numeric'],
+            'gst' => ['nullable', 'numeric','between:0,95'],
+            'short_description' => ['nullable', 'max:300', function ($attributes, $value, $faild) {
+                repeatedValidation($value, $faild);
+            }],
+            'decription' => ['nullable', function ($attributes, $value, $faild) {
+                repeatedValidation2($value, $faild);
+            }],
+            'specifications' => ['nullable', function ($attributes, $value, $faild) {
+                repeatedValidation2($value, $faild);
+            }],
+            'meta_title' => ['nullable', 'max:200', function ($attributes, $value, $faild) {
+                repeatedValidation($value, $faild);
+            }],
+            'meta_keywords' => ['nullable', 'max:500', function ($attributes, $value, $faild) {
+                repeatedValidation($value, $faild);
+            }],
+            'meta_description' => ['nullable', 'max:500', function ($attributes, $value, $faild) {
+                repeatedValidation($value, $faild);
+            }],
+            'moreimg.*' => ['required', 'mimes:png,jpg,jpeg,webp', 'max:5000'],
+
+            // 'size.*' => ['nullable'],
+            // 'unites.*' => ['nullable','numeric'],
+            // 'sku.*' => 'nullable|regex:/^([a-zA-Z0-9])+$/u',
+            // 'stock.*' => 'nullable|digits_between:0,100000',
+            // 'mrp.*' => 'nullable|between:1,500000',
+            // 'selling_price.*' => 'nullable|lt:mrp.*',
+            // 'mrp.*' => 'required|between:1,500000',
+            // 'selling_price.*' => 'required|lt:mrp.*',
+        ], [], [
+            'gst' => 'vat',
+            'specifications' => 'specification',
+            'moreimg.*'=>'more images',
+            'decription' => 'description',
+            // 'size.*' => 'size',
+            // 'unites.*' => 'unites',
+            // 'sku.*' => 'sku',
+            // 'stock.*' => 'stock',
+            // 'mrp.*' => 'mrp',
+            // 'selling_price.*' => 'selling price',
+        ]);
+
+        $data = Product::find($product->id);
+        if (!empty($r->image)) {
+            $ImageName = autoheight('pr/', 400, $r->image);
+            $data->image = $ImageName ?? '';
+        }
+        $data->model = $r->model_number;
+        $data->title = $r->product_name;
+        $data->alias = $r->alias;
+        $data->description = $r->decription;
+        $data->specifications = $r->specifications;
+        $data->brand_id = $r->brand;
+        $data->gst = $r->gst ?? 0;
+        $data->short_description = $r->short_description;
+        $data->category_id = $r->category;
+        $data->availability = $r->availability;
+        $data->minimum_order = $r->stock;
+        $data->meta_title = $r->meta_title ?? $r->product_name;
+        $data->meta_keywords = $r->meta_keywords ?? $r->product_name;
+        $data->meta_description = $r->meta_description ?? $r->product_name;
+
+        $data->save();
+
+        self::AddProductImages($r->all(), $data->id);
+        self::AddProductAttribute($r->all(), $data->id);
+
+        // return back()->with('success_msg', Message::UPDATE);
+        return response()->json([
+            'status' => 200,
+            'message' => Message::UPDATE
+        ]);
+    }
+
+
+public function Save(Request $r)
+    {
+        $validated = $r->validate([
+            'category_name' => ['required', 'max:50', 'unique:services,name', function ($attribute, $value, $fail) {repeatedValidation($value, $fail);}],
+            'icon' => ['nullable','mimes:jpeg,jpg,png,webp','max:5000', function ($attribute, $value, $fail) {
+                if(!in_array($value->getClientOriginalExtension(), ['jpeg', 'jpg', 'png', 'webp'])) {
+                    $fail("The $attribute must be a file of type: jpeg, jpg, png, or webp.");
+                }
+            }],
+            'image' => ['required','mimes:jpeg,jpg,png,webp','max:5000', function ($attribute, $value, $fail) {
+                if(!in_array($value->getClientOriginalExtension(), ['jpeg', 'jpg', 'png', 'webp'])) {
+                    $fail("The $attribute must be a file of type: jpeg, jpg, png, or webp.");
+                }
+            }],
+            'description' => ['required', function ($attribute, $value, $fail) {repeatedValidation2($value, $fail);}],
+            'meta_title' => ['nullable', 'max:200', function ($attribute, $value, $fail) {repeatedValidation($value, $fail);}],
+            'meta_keywords' => ['nullable', 'max:500', function ($attribute, $value, $fail) {repeatedValidation($value, $fail);}],
+            'meta_description' => ['nullable', 'max:500', function ($attribute, $value, $fail) {repeatedValidation($value, $fail);}],
+        ]);
+}
+
