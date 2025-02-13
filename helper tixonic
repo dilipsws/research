@@ -1,0 +1,573 @@
+<?php
+
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+use Intervention\Image\Facades\Image as Image;
+
+if (!function_exists('lowstockqty')) {
+    function lowstockqty()
+    {return 6;}
+}
+
+if (!function_exists('currency')) {
+    function currency()
+    {
+        return [
+            '$',
+            'USD',
+        ];
+    }
+}
+
+if (!function_exists('cmsData')) {
+    function cmsData($id)
+    {
+        return \App\Models\Cms::findOrFail($id);
+    }
+}
+
+if (!function_exists('userinfo')) {
+    function userinfo()
+    {
+        $user = Auth::user();
+        return $user;
+    }
+}
+
+if (!function_exists('admininfo')) {
+
+    function admininfo()
+    {
+
+        $user = Auth::guard('admin')->user();
+
+        return $user;
+
+    }
+
+}
+
+if (!function_exists('project')) {
+
+    function project()
+    {
+
+        return 'Tixonic';
+
+    }
+
+}
+
+if (!function_exists('getordernumber')) {
+
+    function getordernumber($id)
+    {
+
+        $NewOrderNo = '#' . str_pad($id, 8, "0", STR_PAD_LEFT);
+
+        $checkOrderNo = \App\Models\Order::where('order_no', $NewOrderNo)->count();
+
+        if ($checkOrderNo > 0) {
+
+            $id++;
+
+            $NewOrderNo = getordernumber($id);
+
+        }
+
+        return $NewOrderNo;
+
+    }
+
+}
+
+if (!file_exists('imagedecript')) {
+
+    function imagedecript($image)
+    {
+        if(!empty($image)){
+            return base64_decode($image);
+        }
+        return '';
+
+    }
+
+}
+
+if (!file_exists('settingdata')) {
+
+    function settingdata()
+    {
+
+        return \App\Models\Setting::find(1);
+
+    }
+
+}
+
+if (!function_exists('dateformat')) {
+
+    function dateformat($data)
+    {
+
+        return date('d M Y', strtotime($data));
+
+    }
+
+}
+
+if (!function_exists('datetimeformat')) {
+
+    function datetimeformat($data)
+    {
+
+        return date('d M Y h:i:s A', strtotime($data));
+
+    }
+
+}
+
+if (!function_exists('checkimagetype')) {
+
+    function checkimagetype($image)
+    {
+
+        $explode = explode('.', imagedecript($image));
+
+        return strtoupper(end($explode));
+
+    }
+
+}
+
+if (!function_exists('cartqty')) {
+
+    function cartqty()
+    {
+
+        $cartItems = \Cart::getContent();
+
+        $qty = 0;
+
+        foreach ($cartItems as $cartItem) {
+
+            $qty += $cartItem->quantity;
+
+        }
+
+        return $qty;
+
+    }
+
+}
+
+if (!function_exists('sepratearr')) {
+
+    function sepratearr($title)
+    {
+
+        $array = explode(' ', $title);
+
+        $array2 = array_chunk($array, ceil(count($array) / 2));
+
+        $Arr1 = !empty($array2[0]) ? implode(' ', $array2[0]) : '';
+
+        $Arr2 = !empty($array2[1]) ? implode(' ', $array2[1]) : '';
+
+        return [$Arr1, $Arr2];
+
+    }
+
+}
+
+if (!function_exists('directResume')) {
+
+    function directResume($path, $image, $type = null)
+    {
+        $allowedExtensions = ['pdf', 'doc', 'docx'];
+
+        $extension = strtolower($image->getClientOriginalExtension());
+        if (!in_array($extension, $allowedExtensions)) {
+            return ['error' => 'Invalid file type. Only WEBP, JPG, JPEG, and PNG are allowed.'];
+        }
+
+        $name = str_replace(' ', '', strtolower($image->getClientOriginalName()));
+
+        $fileName = empty($type) ? date("Y-m-d") . rand(1111111, 9999999) . $name : $name;
+
+        // Ensure the directory exists
+        $fullPath = public_path($path . 'og/');
+        if (!file_exists($fullPath)) {
+            mkdir($fullPath, 0755, true); // Create the directory if it doesn't exist
+        }
+
+        try {
+            $image->move($fullPath, $fileName);
+        } catch (\Exception $e) {
+            return ['error' => 'Failed to move image: ' . $e->getMessage()];
+        }
+
+        return [$name, base64_encode($fileName)];
+
+    }
+
+}
+
+if (!function_exists('directFile')) {
+
+    function directFile($path, $image, $type = null)
+    {
+
+        // $name = str_replace(' ', '', strtolower($image->getClientOriginalName()));
+
+        // if (empty($type)) {$fileName = date("Y-m-d") . rand(1111111, 9999999) . $name; } else { $fileName = $name;}
+
+        // // $fileName = date("Y-m-d").rand(1111111,9999999).$name;
+
+        // $image->move(public_path($path . 'og/'), $fileName);
+
+        // return [$name, base64_encode($fileName)];
+
+        $allowedExtensions = ['webp', 'jpg', 'jpeg', 'png'];
+
+        // Get the file extension
+        $extension = strtolower($image->getClientOriginalExtension());
+
+        // Check if the file extension is allowed
+        if (!in_array($extension, $allowedExtensions)) {
+            return ['error' => 'Invalid file type. Only WEBP, JPG, JPEG, and PNG are allowed.'];
+        }
+
+        // Sanitize file name
+        $name = str_replace(' ', '', strtolower($image->getClientOriginalName()));
+
+        // Generate a unique file name if no type is provided
+        $fileName = empty($type) ? date("Y-m-d") . rand(1111111, 9999999) . $name : $name;
+
+        // Ensure the directory exists
+        $fullPath = public_path($path . 'og/');
+        if (!file_exists($fullPath)) {
+            mkdir($fullPath, 0755, true); // Create the directory if it doesn't exist
+        }
+
+        // Attempt to move the file
+        try {
+            $image->move($fullPath, $fileName);
+        } catch (\Exception $e) {
+            return ['error' => 'Failed to move image: ' . $e->getMessage()];
+        }
+
+        // Return the original name and the encoded file name
+        return [$name, base64_encode($fileName)];
+
+    }
+
+}
+
+if (!function_exists('autoheight')) {
+
+    function autoheight($path, $width, $image, $type = null)
+    {
+
+        $name = $image->getClientOriginalName();
+        $extension = strtolower($image->getClientOriginalExtension());
+        $fileName = empty($type) ? date("Y-m-d") . rand(1111111, 9999999) : implode('', explode('.', $name, -1));
+
+        $basePath = public_path($path);
+        $jpgPath = public_path($path . 'jpg/');
+        $ogPath = public_path($path . 'og/');
+
+        if (!file_exists($basePath)) mkdir($basePath, 0777, true);
+        if (!file_exists($jpgPath)) mkdir($jpgPath, 0777, true);
+        if (!file_exists($ogPath)) mkdir($ogPath, 0777, true);
+
+        /** webp **/
+        $imagesource = $basePath . $fileName . '.webp';
+        Image::make($image->getRealPath())->encode('webp', 90)->resize($width, null, function ($constraint) {
+            $constraint->aspectRatio();
+        })->brightness(1)->save($imagesource);
+
+        /** jpg **/
+        $imagesource2 = $jpgPath . $fileName .'.jpg';
+        Image::make($image->getRealPath())->encode('jpg', 90)->resize($width, null, function ($constraint) {
+            $constraint->aspectRatio();
+        })->brightness(1)->save($imagesource2);
+
+        /** original **/
+        $imagesource3 = $ogPath . strtolower($name);
+        Image::make($image->getRealPath())->encode('jpg', 90)->resize($width, null, function ($constraint) {
+            $constraint->aspectRatio();
+        })->brightness(1)->save($imagesource3);
+
+        return [$name, base64_encode($name), base64_encode($fileName . '.webp'), base64_encode($fileName . '.jpg')];
+
+    }
+
+}
+
+if (!function_exists('alias')) {
+
+    function alias($table, $field, $title)
+    {
+
+        $table = $table;
+
+        $field = $field;
+
+        $slug = $title;
+
+        $slug = Str::slug($title, "-");
+
+        $key = null;
+
+        $value = null;
+
+        $i = 0;
+
+        $params = array();
+
+        $params[$field] = $slug;
+
+        if ($key) {
+            $params["$key !="] = $value;
+        }
+
+        while (DB::table($table)->where($params)->get()->count()) {
+
+            if (!preg_match('/-{1}[0-9]+$/', $slug)) {
+                $slug .= '-' . ++$i;
+            } else {
+                $slug = preg_replace('/[0-9]+$/', ++$i, $slug);
+            }
+
+            $params[$field] = $slug;
+
+        }
+
+        return $alias = $slug;
+
+    }
+
+}
+
+if (!function_exists('int_to_words')) {
+
+    function int_to_words($number)
+    {
+
+        $no = (int) floor($number);
+
+        $point = (int) round(($number - $no) * 100);
+
+        $hundred = null;
+
+        $digits_1 = strlen($no);
+
+        $i = 0;
+
+        $str = array();
+
+        $words = array('0' => '', '1' => 'one', '2' => 'two',
+
+            '3' => 'three', '4' => 'four', '5' => 'five', '6' => 'six',
+
+            '7' => 'seven', '8' => 'eight', '9' => 'nine',
+
+            '10' => 'ten', '11' => 'eleven', '12' => 'twelve',
+
+            '13' => 'thirteen', '14' => 'fourteen',
+
+            '15' => 'fifteen', '16' => 'sixteen', '17' => 'seventeen',
+
+            '18' => 'eighteen', '19' => 'nineteen', '20' => 'twenty',
+
+            '30' => 'thirty', '40' => 'forty', '50' => 'fifty',
+
+            '60' => 'sixty', '70' => 'seventy',
+
+            '80' => 'eighty', '90' => 'ninety');
+
+        $digits = array('', 'hundred', 'thousand', 'lakh', 'crore');
+
+        while ($i < $digits_1) {
+
+            $divider = ($i == 2) ? 10 : 100;
+
+            $number = floor($no % $divider);
+
+            $no = floor($no / $divider);
+
+            $i += ($divider == 10) ? 1 : 2;
+
+            if ($number) {
+
+                $plural = (($counter = count($str)) && $number > 9) ? 's' : null;
+
+                $hundred = ($counter == 1 && $str[0]) ? '  ' : null;
+
+                $str[] = ($number < 21) ? $words[$number] .
+
+                " " . $digits[$counter] . $plural . " " . $hundred
+
+                :
+
+                $words[floor($number / 10) * 10]
+
+                    . " " . $words[$number % 10] . " "
+
+                    . $digits[$counter] . $plural . " " . $hundred;
+
+            } else {
+                $str[] = null;
+            }
+
+        }
+
+        $str = array_reverse($str);
+
+        $result = implode('', $str);
+
+        if ($point > 20) {
+
+            $points = ($point) ?
+
+            "" . $words[floor($point / 10) * 10] . " " .
+
+            $words[$point = $point % 10] : '';
+
+        } else {
+
+            $points = $words[$point];
+
+        }
+
+        if ($points != '') {
+
+            return $result . "and  " . $points . " Only";
+
+        } else {
+
+            return $result . "Only";
+
+        }
+
+    }
+
+}
+
+if (!function_exists('exportHeader')) {
+
+    function exportHeader($fileName)
+    {
+
+        $Arr = array(
+
+            "Content-type" => "text/csv",
+
+            "Content-Disposition" => "attachment; filename=$fileName",
+
+            "Pragma" => "no-cache",
+
+            "Cache-Control" => "must-revalidate, post-check=0, pre-check=0",
+
+            "Expires" => "0",
+
+        );
+
+        return $Arr;
+
+    }
+
+}
+
+if (!function_exists('readNotification')) {
+
+    function readNotification($id)
+    {
+
+        $data = \App\Models\Notification::find($id);
+
+        $data->status = 1;
+
+        $data->save();
+
+    }
+
+}
+
+
+
+// VALIDATION
+function repeatedValidation($value, $fail, $maxLength = null)
+{
+    if(empty(strip_tags($value)) && str_contains($value, '<img')){
+        return $fail('only image are not allowed.');
+    }elseif(empty(strip_tags($value))){
+        return $fail('The empty field are not accepted.');
+    }elseif (is_numeric(strip_tags($value))) {
+        return $fail('The numeric value are not accepted.');
+    } 
+    // elseif (preg_match("/\b(\w+)\s+\\1\b/i", strip_tags($value)) > 0) {
+    //     return $fail('You can`t add repeated word in this field.');
+    // } 
+    elseif (!empty($maxLength)) {
+        if (strlen(strip_tags($value)) > $maxLength) {
+            return $fail('You can`t add more than ' . $maxLength . ' characters.');
+        }
+    } elseif (preg_match("/^[^a-zA-Z0-9]+$/", strip_tags($value)) > 0) {
+        return $fail('You can`t add wrong format in this field.');
+    } elseif (!preg_match('/[a-zA-Z]/', strip_tags($value))) {
+        return $fail('Please add atleast one character.');
+    }
+}
+
+function repeatedValidation2($value, $fail, $maxLength = null)
+{
+    if (is_numeric(strip_tags($value))) {
+        return $fail('The numeric value are not accepted.');
+    } 
+    // elseif (preg_match("/\b(\w+)\s+\\1\b/i", strip_tags($value)) > 0) {
+    //     return $fail('You can`t add repeated word in this field.');
+    // } 
+    elseif (!empty($maxLength)) {
+        if (strlen(strip_tags($value)) > $maxLength) {
+            return $fail('You can`t add more than ' . $maxLength . ' characters.');
+        }
+    } elseif (preg_match("/^[^a-zA-Z0-9]+$/", strip_tags($value)) > 0) {
+        return $fail('You can`t add wrong format in this field.');
+    }
+}
+
+function specialCharValidation($value, $fail, $maxLength = null)
+{
+    if(empty(strip_tags($value))){
+        return $fail('The empty field are not accepted.');
+    }elseif (preg_match("/\b(\w+)\s+\\1\b/i", strip_tags($value)) > 0) {
+        return $fail('You can`t add repeated word in this field.');
+    } elseif (preg_match("/^[^a-zA-Z0-9]+$/", strip_tags($value)) > 0) {
+        return $fail('You can`t add wrong format in this field.');
+    }
+}
+
+function emailValidation($value, $fail)
+{
+    $email = trim($value);
+    $email = str_replace(" ", "", $email);
+    if (filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
+        return $fail('Invalid email address.');
+    }
+
+    if (substr_count($email, '@') > 1) //more than one '@'?
+    {
+        return $fail('Invalid email address.');
+    }
+
+    if (preg_match("#[\;\#\n\r\*\'\"<>&\%\!\(\)\{\}\[\]\?\\/\s]#", $email)) {
+        return $fail('Invalid email address.');
+    } else if (preg_match("/^.+\@(\[?)[a-zA-Z0-9\-\.]+\.([a-zA-Z]{2,4}|[0-9]{1,4})(\]?)$/", $email)) {
+        return true;
+    } else {
+        return $fail('Invalid email address.');
+    }
+}
