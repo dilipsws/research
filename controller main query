@@ -1,0 +1,142 @@
+// get orm query 
+
+data-bs-toggle="tooltip" data-bs-placement="top" data-bs-html="true" title="Refresh"
+
+{{$lists->links('pagination::bootstrap-4')}}
+
+
+              $features = \App\Models\Product::whereHas('category',function($query){
+                    $query->with('category');
+                });
+                
+                $features = $features->whereHas('brand', function ($query) {
+                    $query->where('status', '1');
+                });
+                $features = $features->where(['status' => 1, 'category_id' => $categories->id]);
+                $features = $features->search();
+                $features = $features->select('products.*');
+                $features = $features->paginate(60);
+
+
+public function categories()
+    {
+        $subcategories = \App\Models\Category::where(['status' => 1, 'parent' => 0])->paginate(20);
+
+        $brandfind = $this->findBrand();
+        $allBrand = \App\Models\Brand::whereIn('id', $brandfind)->get();
+
+        $features = \App\Models\Product::with(['category'=>function ($query) {
+            $query->gettree();
+        }])
+        ->whereHas('category', function ($query) {
+            $query->gettree();
+        })
+        ->whereHas('brand', function ($query) {
+            $query->where('status', '1');
+        })
+        ->where(['status' => 1, 'featured' => 1])->paginate(20);
+        
+        return view('category', compact('subcategories', 'features', 'allBrand'));
+    }
+
+public function product($alias)
+    {
+        if (!empty($alias)) {
+
+            $product = \App\Models\Product::with('category')
+            ->whereHas('category', function ($query) {
+                $query->where('status', '1')
+                    ->where(function ($query) {
+                        $query->whereHas('parent', function ($qr) {
+                            $qr->where('status', '1')
+                                ->orWhereHas('parent', function ($quer) {
+                                    $quer->where('status', '1');
+                                });
+                        })->orDoesntHave('parent');
+                    });
+            })
+            ->whereHas('brand', function ($query) {
+                $query->where('status', '1');
+            })
+            ->where(['status' => 1, 'alias' => $alias])->firstOrFail();
+            
+            $check = \App\Models\Category::where(['id' => $product->category_id])->firstorfail();
+            if($check->level == 2){
+                $checks = \App\Models\Category::where(['id' => $check->parent])->firstorfail();
+                if($checks->status == 0){ abort(404); }
+
+            }else if($check->level == 3){
+                
+                $checks = \App\Models\Category::where(['level' => 2, 'id' => $check->parent])->firstorfail();
+                // dd($checks);
+                if($checks->status == 0 || $checks == null){ abort(404); }
+                else{
+                    $checkss = \App\Models\Category::where(['level' => 1, 'id' => $checks->parent])->firstorfail();
+                    // dd($checkss);
+                    if($checkss->status == 0 ){ abort(404); }
+                }
+            }
+
+            $relateds = \App\Models\Product::with(['category'=>function ($query) {
+                $query->gettree();
+            }])
+            ->whereHas('category', function ($query) {
+                $query->gettree();
+            })
+            // $relateds = \App\Models\Product::with('category')
+            // ->whereHas('category', function ($query) {
+            //     $query->where('status', '1')
+            //         ->where(function ($query) {
+            //             $query->whereHas('parent', function ($qr) {
+            //                 $qr->where('status', '1')
+            //                     ->orWhereHas('parent', function ($quer) {
+            //                         $quer->where('status', '1');
+            //                     });
+            //             })->orDoesntHave('parent');
+            //         });
+            // })
+            ->whereHas('brand', function ($query) {
+                $query->where('status', '1');
+            })
+            ->where(['status' => 1, 'category_id' => $product->category_id])->whereNotIn('id', [$product->id])->paginate(20);
+
+            // $similars = \App\Models\Product::with('category')
+            // ->whereHas('category', function ($query) {
+            //     $query->where('status', '1')
+            //         ->where(function ($query) {
+            //             $query->whereHas('parent', function ($qr) {
+            //                 $qr->where('status', '1')
+            //                     ->orWhereHas('parent', function ($quer) {
+            //                         $quer->where('status', '1');
+            //                     });
+            //             })->orDoesntHave('parent');
+            //         });
+            // })
+            $similars = \App\Models\Product::with(['category'=>function ($query) {
+                $query->gettree();
+            }])
+            ->whereHas('category', function ($query) {
+                $query->gettree();
+            })
+            ->whereHas('brand', function ($query) {
+                $query->where('status', '1');
+            })
+            ->where(function ($qry) use ($product) {
+                return $qry->where(['status' => 1, 'category_id' => $product->category_id, 'brand_id' => $product->brand_id])
+                    ->whereNotIn('id', [$product->id]);
+            });
+
+            $similars = $similars->paginate(20);
+            $countries = \App\Models\Country::where(['status' => 1])->get();
+            $facilities = \App\Models\Facility::where(['type' => 2, 'status' => 1])->paginate(10);
+            $categories = \App\Models\Category::find($product->category_id);
+            $breadcrem = $this->BreadCrum($categories);
+            $this->SaveSearch('product', $product->id);
+
+            return view('product', compact('product', 'relateds', 'similars', 'countries', 'facilities', 'breadcrem'));
+
+        } else {
+            abort(404);
+        }
+    }
+
