@@ -1,0 +1,74 @@
+ @if (count($list->faqs ?? []) > 0)
+            <section>
+                <h2 class="text-center Heading mb-4">{{ $list->title }} FAQs</h2>
+                <div class="container">
+                    <div class="accordion accordion-flush Faqs mt-3" id="PayFaqs">
+                        @php $FaqsScr=''; @endphp
+                        @foreach ($list->faqs as $k=> $faqs)
+                        @php
+                        $FaqsScr .='{
+                            "@type": "Question",
+                            "name": "'.$faqs->title.'",
+                            "acceptedAnswer": {
+                                 "@type": "Answer",
+                                "text": "'.trim(str_replace("\xc2\xa0", ' ', html_entity_decode(strip_tags($faqs->description)))).'"
+                                }
+                        }';
+                        if( ($k+1)<count($list->faqs)){ $FaqsScr .=',';}
+                        @endphp
+                            <div class="accordion-item">
+                                <div class="accordion-header" id="Pay{{ $faqs->id }}">
+                                    <button class="accordion-button {{ $loop->iteration == 1 ? '' : 'collapsed' }}"
+                                        type="button" data-bs-toggle="collapse"
+                                        data-bs-target="#PayFaqs{{ $faqs->id }}" aria-expanded="true"
+                                        aria-controls="PayFaqs{{ $faqs->id }}">{{ $faqs->title }}</button>
+                                </div>
+                                <div id="PayFaqs{{ $faqs->id }}"
+                                    class="accordion-collapse {{ $loop->iteration == 1 ? 'show' : '' }} collapse"
+                                    aria-labelledby="Pay{{ $faqs->id }}" data-bs-parent="#PayFaqs">
+                                    <div class="accordion-body">
+                                        {!! $faqs->description !!}
+                                    </div>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            </section>
+        @endif
+
+
+@push('css')
+    <x-meta :options="[
+        'img' => $metaImg ?? '',
+        'title' => $list->meta_title,
+        'keywords' => $list->meta_keywords,
+        'description' => $list->meta_description,
+        'FaqsScr' => $FaqsScr ?? '',
+        'breadcrumb' => [
+                'Categories' => route('categories'),
+                $list->categoryInfo->title => route('category',['alias'=>$list->categoryInfo->alias ?? '']),
+                $list->title => url()->current()
+            ]
+    ]" />
+
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "ProfessionalService",
+      "@id": "ProfessionalService",
+      "address": "{{url()->current()}}",
+      "alternateName": "{{$list->meta_title}}",
+      "areaServed": "[Sonipat, Haryana, India]",
+      "description": "{{$list->meta_description}}",
+      "email": "info@acetestgroup.com",
+      "image": "{{asset('frontend/img/logo.svg')}}",
+      "keywords": "{{$list->meta_keywords}}",
+      "legalName": "ACE Test labs",
+      "logo": "{{asset('frontend/img/logo.svg')}}",
+      "location": "Sonipat, Harayna"
+    }
+    </script>
+
+    <link rel="stylesheet" href="{{ \App\Enums\Url::CSS }}pages.min.css">
+@endpush
