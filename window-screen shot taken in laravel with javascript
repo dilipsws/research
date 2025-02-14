@@ -46,6 +46,42 @@ public function capture()
                 return response.json();
             })
             .then(data => console.log("✅ Screenshot Taken:", data))
-            .catch(error => console.error("❌ Error:", error));
+            .catch(error => console.error("❌ Error:", error))
         }, 2000);
+    </script>
+
+
+next way is
+
+<script>
+        function takeScreenshot() {
+            fetch('{{ route('employee.take-screenshot') }}')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! Status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => console.log("✅ Screenshot Taken:", data))
+                .catch(error => console.error("❌ Error:", error))
+                .finally(() => {
+                    // Call the function again after 5 minutes (300,000 ms)
+                    // setTimeout(takeScreenshot, 300000);
+                    let now = new Date();
+                    let nextRunTime = new Date(now.getTime() + 5 * 60 * 1000); // 5 minutes later
+
+                    // Calculate the delay in milliseconds until the next run
+                    let delay = nextRunTime.getTime() - now.getTime();
+
+                    // Set the timeout for the next function call
+                    setTimeout(takeScreenshot, delay);
+                });
+        }
+        if (!localStorage.getItem('screenshotStarted')) {
+            // Mark that the function has been triggered
+            localStorage.setItem('screenshotStarted', 'true');
+            
+            // Start the screenshot function immediately
+            takeScreenshot();
+        }
     </script>
