@@ -1,0 +1,97 @@
+public function Tacking_Remove(Request $r){
+        $check = $r->check;
+        if(empty($check)){ return redirect()->back()->with(array('success_msg'=>'Please choose at least one data.')); }
+        foreach($check as $id){
+           
+            $data = \App\Models\Screentshot::where('id', $id)->first();
+            if ($data) {
+                $filePath = storage_path('app/public/screenshots/' . $data->screentshot); // Corrected file path
+                if (file_exists($filePath)) {
+                    unlink($filePath);
+                }
+                $data->delete();
+            } 
+            
+        }
+        return redirect()->back()->with(array('success_msg'=>'Data Removed!'));        
+    }
+
+
+
+<form method="POST" class="removfrom" action="{{route('admin.bulktrackingremove')}}">
+                        @csrf                    
+                        @if($lists->count()==0)
+                            <div class="card-inner text-center">
+                                <b>Hello {{admininfo()->name ?? ''}},</b><br> No any project are found in your account.
+                            </div>
+                        @else
+                        <table class="nk-tb-list nk-tb-ulist">
+                            <thead>
+                                <tr class="nk-tb-item nk-tb-head">
+                                    <th class="nk-tb-col nk-tb-col-check">
+                                        
+                                    </th>
+                                    <th class="nk-tb-col"><span class="sub-text">ScreenShot</span></th>
+                                    <th class="nk-tb-col nk-tb-col-tools text-right">
+                                        <div class="dropdown">
+                                            <a href="#" class="btn btn-xs btn-trigger btn-icon dropdown-toggle mr-n1" data-toggle="dropdown" data-offset="0,5"><em class="icon ni ni-more-h"></em></a>
+                                            <div class="dropdown-menu dropdown-menu-right">
+                                                <ul class="link-list-opt no-bdr">
+                                                    
+                                                    <li class="bulkremove">
+                                                        <a href="#"><em class="icon ni ni-trash"></em><span>Bulk Remove</span></a>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($lists as $list)
+                                <tr class="nk-tb-item">
+                                    <td class="nk-tb-col nk-tb-col-check">
+                                        <div class="custom-control custom-control-sm custom-checkbox notext">
+                                            <input type="checkbox" name="check[]" value="{{$list->id}}" class="custom-control-input" id="pid-{{$loop->iteration}}" /><label class="custom-control-label" for="pid-{{$loop->iteration}}"></label>
+                                        </div>
+                                    </td>
+                                    
+                                    <td class="nk-tb-col tb-col-xl">
+                                        <img class="round" src="{{asset('storage/screenshots')}}/{{$list->screentshot}}" alt="" width="350">
+                                    </td>
+                                    
+                                    <td class="nk-tb-col nk-tb-col-tools">
+                                        <ul class="nk-tb-actions gx-1">
+                                            <li>
+                                                <div class="drodown">
+                                                    <a href="#" class="dropdown-toggle btn btn-sm btn-icon btn-trigger" data-toggle="dropdown"><em class="icon ni ni-more-h"></em></a>
+                                                    <div class="dropdown-menu dropdown-menu-right">
+                                                        <ul class="link-list-opt no-bdr">
+                                                            <li>
+                                                                <a href="{{route('admin.deletetracking',['id'=>$list->id])}}" style="font-size: 17px;" class="text-danger">
+                                                                    <em class="icon ni ni-trash" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-html="true" title="Delete"></em>
+                                                                </a>
+                                                            </li>
+                                                        </ul>
+                                                    </div>
+                                                </div>
+                                            </li>
+                                        </ul>
+                                    </td>
+                                </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                        @endif
+                    </form>
+
+{{ $lists->links('pagination::bootstrap-5') }}
+
+
+<script>
+    $('.bulkremove').on('click',function(e){
+        if(confirm('Do you want to delete?')){
+            $('.removfrom').submit();
+        }
+    });
+</script>
